@@ -1,9 +1,10 @@
 {
   "name": "app",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "FocusGuard AI - context-aware distraction blocker",
+  "main": "src/main/main.js",
   "scripts": {
+    "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,5 +13,8 @@
   "type": "commonjs",
   "dependencies": {
     "active-win": "^8.2.1"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7"
   }
 }

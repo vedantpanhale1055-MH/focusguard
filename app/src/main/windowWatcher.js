@@ -1,26 +1,41 @@
-// Step 1: Standalone test — confirms we can read the active window
-// Run this file directly with: node src/main/windowWatcher.js
-// Switch between different apps/browser tabs while it's running and
-// watch the console print the active window every 2 seconds.
-
 const activeWindow = require('active-win');
 
-console.log('FocusGuard window watcher — starting test.');
-console.log('Switch between apps/tabs now. Press Ctrl+C to stop.\n');
+let intervalId = null;
+let lastTitle = null;
 
-setInterval(async () => {
-  try {
-    const win = await activeWindow();
+/**
+ * Starts polling the active window every `pollMs` ms.
+ * Calls onChange(windowInfo) only when the title actually changes,
+ * so we don't spam the classifier with the same window repeatedly.
+ */
+function startWatching(onChange, pollMs = 2000) {
+  if (intervalId) return; // already running
 
-    if (!win) {
-      console.log('No active window detected.');
-      return;
+  intervalId = setInterval(async () => {
+    try {
+      const win = await activeWindow();
+      if (!win) return;
+
+      const title = win.title || '(no title)';
+      const appName = win.owner?.name || 'unknown';
+
+      // Only fire the callback when the window actually changed
+      if (title !== lastTitle) {
+        lastTitle = title;
+        onChange({ appName, title });
+      }
+    } catch (err) {
+      console.error('windowWatcher error:', err.message);
     }
+  }, pollMs);
+}
 
-    console.log(
-      `App: ${win.owner?.name || 'unknown'} | Title: ${win.title || '(no title)'}`
-    );
-  } catch (err) {
-    console.error('Error reading active window:', err.message);
+function stopWatching() {
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
+    lastTitle = null;
   }
-}, 2000);
+}
+
+module.exports = { startWatching, stopWatching };
