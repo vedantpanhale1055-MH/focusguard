@@ -3,13 +3,16 @@ const activeWindow = require('active-win');
 let intervalId = null;
 let lastTitle = null;
 
-/**
- * Starts polling the active window every `pollMs` ms.
- * Calls onChange(windowInfo) only when the title actually changes,
- * so we don't spam the classifier with the same window repeatedly.
- */
+// Never classify FocusGuard's own window — avoids self-referential
+// blocking of the app that's doing the blocking.
+const SELF_APP_NAMES = ['electron.exe', 'electron', 'focusguard', 'focusguard.exe'];
+
+function isSelf(appName) {
+  return SELF_APP_NAMES.includes((appName || '').toLowerCase());
+}
+
 function startWatching(onChange, pollMs = 2000) {
-  if (intervalId) return; // already running
+  if (intervalId) return;
 
   intervalId = setInterval(async () => {
     try {
@@ -19,7 +22,10 @@ function startWatching(onChange, pollMs = 2000) {
       const title = win.title || '(no title)';
       const appName = win.owner?.name || 'unknown';
 
-      // Only fire the callback when the window actually changed
+      if (isSelf(appName) || title.toLowerCase().includes('focusguard')) {
+        return; // skip entirely, don't call onChange
+      }
+
       if (title !== lastTitle) {
         lastTitle = title;
         onChange({ appName, title });
