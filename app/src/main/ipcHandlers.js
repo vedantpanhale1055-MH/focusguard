@@ -9,7 +9,16 @@ function registerIpcHandlers(ipcMain, getMainWindow) {
   ipcMain.handle('session:start', async (event, { goal, mode }) => {
     currentSession = { goal, mode, sessionId: null };
 
-    // TODO later: call backend to create a session row and store sessionId
+    // Tell the backend so the browser extension can see the active goal too
+    try {
+      await fetch(`${BACKEND_URL}/session/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, mode }),
+      });
+    } catch (err) {
+      console.error('Failed to notify backend of session start:', err.message);
+    }
 
     startWatching(async ({ appName, title }) => {
       await evaluateWindow(appName, title, getMainWindow);
@@ -23,6 +32,13 @@ function registerIpcHandlers(ipcMain, getMainWindow) {
     stopWatching();
     const endedSession = currentSession;
     currentSession = null;
+
+    try {
+      await fetch(`${BACKEND_URL}/session/end`, { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to notify backend of session end:', err.message);
+    }
+
     return { ended: true, session: endedSession };
   });
 }
@@ -59,4 +75,4 @@ async function evaluateWindow(appName, title, getMainWindow) {
   }
 }
 
-module.exports = { registerIpcHandlers };   
+module.exports = { registerIpcHandlers };

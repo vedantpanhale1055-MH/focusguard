@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Blocked — FocusGuard AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+    body {
+      background: #0f1115;
+      color: #e6e6e6;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 24px;
+    }
+    h1 { color: #f05a5a; font-size: 28px; margin-bottom: 16px; }
+    p { color: #8892a0; max-width: 480px; margin-bottom: 8px; }
+    #tab-title { color: #e6e6e6; font-weight: 600; }
+    button {
+      margin-top: 24px;
+      padding: 12px 24px;
+      border: 1px solid #2a2e38;
+      border-radius: 8px;
+      background: transparent;
+      color: #e6e6e6;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #171a21; }
+  </style>
+</head>
+<body>
+  <h1>🚫 Blocked by FocusGuard</h1>
+  <p id="tab-title"></p>
+  <p id="reason"></p>
+  <button onclick="history.back()">Go Back</button>
+
+  <script src="blocked.js"></script>
+</body>
+</html>
