@@ -1,5 +1,5 @@
 // Renders the "start session" screen into #app.
-// Calls onStart(goal, mode) when the user clicks Start.
+// Calls onStart(goal, mode, durationMinutes) when the user clicks Start.
 function renderSessionStart(container, onStart) {
   container.innerHTML = `
     <div class="card">
@@ -18,19 +18,50 @@ function renderSessionStart(container, onStart) {
         <option value="Office Work">Office Work</option>
       </select>
 
+      <label for="duration-select">Duration</label>
+      <select id="duration-select">
+        <option value="15">15 minutes</option>
+        <option value="25" selected>25 minutes</option>
+        <option value="45">45 minutes</option>
+        <option value="60">60 minutes</option>
+        <option value="custom">Custom...</option>
+      </select>
+
+      <input type="number" id="custom-duration" placeholder="Enter minutes" min="1"
+        style="display:none; margin-top:12px;" />
+
       <button id="start-btn">Start Session</button>
     </div>
   `;
 
+  const durationSelect = container.querySelector('#duration-select');
+  const customInput = container.querySelector('#custom-duration');
+
+  durationSelect.addEventListener('change', () => {
+    customInput.style.display = durationSelect.value === 'custom' ? 'block' : 'none';
+  });
+
   container.querySelector('#start-btn').addEventListener('click', () => {
     const goal = container.querySelector('#goal-input').value.trim();
     const mode = container.querySelector('#mode-select').value;
+
+    let durationMinutes;
+    if (durationSelect.value === 'custom') {
+      durationMinutes = parseInt(customInput.value, 10);
+    } else {
+      durationMinutes = parseInt(durationSelect.value, 10);
+    }
 
     if (!goal) {
       alert('Please enter a goal before starting.');
       return;
     }
 
-    onStart(goal, mode);
+    if (!durationMinutes || durationMinutes <= 0) {
+      alert('Please enter a valid duration.');
+      return;
+    }
+
+    onStart(goal, mode, durationMinutes);
   });
 }

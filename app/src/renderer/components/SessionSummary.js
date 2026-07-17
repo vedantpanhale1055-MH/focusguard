@@ -1,7 +1,8 @@
 // Renders the end-of-session summary screen into #app.
 // log = array of { title, allow, reason }
+// endedEarly = true if the user clicked "End Session Early" before the timer finished
 // onRestart() is called when the user clicks "Start New Session"
-function renderSessionSummary(container, goal, log, onRestart) {
+function renderSessionSummary(container, goal, log, endedEarly, onRestart) {
   const total = log.length;
   const blocked = log.filter((entry) => !entry.allow).length;
   const allowed = total - blocked;
@@ -18,10 +19,15 @@ function renderSessionSummary(container, goal, log, onRestart) {
     )
     .join('');
 
+  const statusLine = endedEarly
+    ? '<p class="subtitle" style="color:#f0a05a;">⚠ Session ended early</p>'
+    : '<p class="subtitle" style="color:#4fd1c5;">✅ Session completed</p>';
+
   container.innerHTML = `
     <div class="card">
       <h1>Session Summary</h1>
       <p class="subtitle">Goal: ${goal}</p>
+      ${statusLine}
 
       <div class="status-row">
         <span class="badge allowed">${allowed} allowed</span>
