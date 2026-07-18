@@ -2,7 +2,7 @@
 
 A desktop app + browser extension that blocks distractions based on **context, not a static blacklist**.
 
-Instead of asking *"is this app on the banned list?"*, FocusGuard asks *"is what I'm doing right now related to what I said I wanted to focus on?"* — so a coding tutorial on YouTube is allowed during a "learn Python" session, but a random entertainment video isn't.
+Instead of asking *"is this website on the block list?"*, FocusGuard asks *"is what I'm doing right now related to what I said I wanted to focus on?"* — so a coding tutorial on YouTube is allowed during a "learn Python" session, but a random entertainment video isn't.
 
 ---
 
@@ -14,34 +14,47 @@ That fails in two directions:
 - **Too strict** — legitimate use of a "blocked" app (e.g. YouTube for a tutorial) gets blocked along with everything else
 - **Too loose** — anything not on the blacklist, including brand-new distractions, is allowed freely with zero awareness of whether you're still on-task
 
-None of these tools understand *why* an app is open. FocusGuard's bet: a small, fast AI classifier can look at context (stated goal + current activity) and make that judgment call in real time.
+FocusGuard's bet: a small, fast AI classifier can look at context (stated goal + current activity) and make that judgment call in real time.
 
 ---
 
-## How It Works
+## 🚀 How to Run It On Your Device
 
-1. **Start a session** in the desktop app — state your goal in plain language (e.g. "Learn Python") and set a duration
-2. **FocusGuard watches** your active window and browser tabs in real time
-3. **Each new window/tab is evaluated** against your stated goal by an AI classifier (Groq / Llama 3.1) — judging the actual content, not just the app or platform it's on
-4. **Off-goal activity is flagged**, with a plain-language reason — e.g. *"YouTube video is unrelated to Python coding"*
-5. **Session ends** on timer completion or manual early exit, then shows a summary: what was allowed, what was blocked, and a Focus Score
+There are two parts to install: the **desktop app** and the **Chrome extension**. Both are needed for the full experience (native app monitoring + real browser tab blocking).
 
----
+### Step 1 — Install the desktop app
 
-## Download
+1. Go to the [Releases page](../../releases/latest)
+2. Download **`FocusGuard.AI.Setup.1.0.0.exe`**
+3. Run the installer
+   - Windows SmartScreen will likely show **"Windows protected your PC"** — this is expected for a free, unsigned build. Click **"More info"** → **"Run anyway"** to proceed.
+4. Choose **"Only for me"** during setup (simpler, no admin prompt needed), finish the install
+5. Launch **FocusGuard AI** from the Start Menu or desktop shortcut
 
-A packaged Windows installer is available on the [Releases page](../../releases).
+That's it for the app — it connects automatically to the live backend, no extra setup, no need to run anything else locally for native app monitoring.
 
-> **Note:** Windows SmartScreen may show an "unknown publisher" warning on first launch — this is expected for a free, unsigned build (see [Known Limitations](docs/known-limitations.md)). Click **"More info" → "Run anyway"** to proceed.
+### Step 2 — Load the Chrome extension (for real tab blocking)
 
-### Running the full experience
+This step is required to actually **block** distracting browser tabs. Without it, the app will still *detect and log* your browser activity, but won't redirect blocked tabs.
 
-The installed app handles session tracking and native window monitoring out of the box. To get the complete experience shown in the demo (AI classification + real browser tab blocking), you'll also need:
+1. Download or clone this repository (just need the `extension` folder):
+   ```
+   git clone https://github.com/vedantpanhale1055-MH/focusguard.git
+   ```
+2. Open Chrome and go to `chrome://extensions`
+3. Turn on **Developer mode** (toggle, top right)
+4. Click **"Load unpacked"**
+5. Select the `extension` folder from the cloned/downloaded repo
+6. Confirm **FocusGuard AI** now appears in your extensions list, showing as active
 
-1. **The backend running locally** — see [Setup for Developers](#setup-for-developers) below
-2. **The Chrome extension loaded** — see below
+### Step 3 — Use it
 
-This local-backend requirement is a deliberate MVP tradeoff to keep the project fully free to run (see [Known Limitations](docs/known-limitations.md)).
+1. Open the FocusGuard AI app
+2. Enter your goal (e.g. "Learn Python") and pick a session duration
+3. Click **Start Session**
+4. Work as normal — FocusGuard watches your active windows and browser tabs
+5. Off-goal activity gets flagged (native apps) or actually blocked with a redirect (browser tabs)
+6. When the timer ends (or you end early), you'll see a session summary with your Focus Score
 
 ---
 
@@ -54,36 +67,7 @@ Enforcement differs by *where* the activity happens:
 | Any **Chrome browser tab** (YouTube, Instagram web, browser games, WhatsApp Web, etc.) | ✅ Yes | ✅ Yes — tab is redirected to a block page |
 | Any **native desktop app** (WhatsApp Desktop, Instagram/Discord/Steam apps, installed games, etc.) | ✅ Yes | ❌ No — shown as "Blocked" in the FocusGuard log, but the app itself is not closed or prevented |
 
-**In short: real enforcement only exists inside Chrome, on actual tabs. Everything outside the browser is currently observe-and-log only.**
-
----
-
-## Setup for Developers
-
-```bash
-git clone https://github.com/vedantpanhale1055-MH/focusguard.git
-cd focusguard
-```
-
-**1. Backend**
-```bash
-cd backend
-npm install
-# add your Groq API key to a .env file (see .env.example)
-node server.js
-```
-
-**2. Desktop app**
-```bash
-cd app
-npm install
-npm start
-```
-
-**3. Browser extension**
-- Go to `chrome://extensions`
-- Enable Developer mode
-- Click "Load unpacked" → select the `extension` folder
+**In short: real enforcement only exists inside Chrome, on actual tabs. Everything outside the browser is currently observe-and-log only.** See [Known Limitations](docs/known-limitations.md) for why this is a deliberate scope decision.
 
 ---
 
@@ -95,7 +79,7 @@ npm start
 | Browser extension | Chrome Manifest V3 |
 | Window monitoring | `active-win` |
 | AI classification | Groq (Llama 3.1 8B Instant) |
-| Backend | Node.js + Express |
+| Backend | Node.js + Express, deployed on Vercel |
 | Database | Supabase (Postgres) — optional, for decision history |
 | Packaging | electron-builder (NSIS installer) |
 | Distribution | GitHub Releases (free, no code signing) |
@@ -114,6 +98,43 @@ focusguard/
 
 ---
 
+## Setup for Developers (running everything from source)
+
+```bash
+git clone https://github.com/vedantpanhale1055-MH/focusguard.git
+cd focusguard
+```
+
+**1. Backend** (only needed if you want to run your own instance instead of using the live one)
+```bash
+cd backend
+npm install
+# add your own Groq API key to a .env file — see .env.example
+node server.js
+```
+If running your own backend locally, update `BACKEND_URL` in `app/src/main/ipcHandlers.js` and `extension/background.js` to `http://localhost:3001`.
+
+**2. Desktop app**
+```bash
+cd app
+npm install
+npm start
+```
+
+**3. Browser extension**
+- Go to `chrome://extensions`
+- Enable Developer mode
+- Click "Load unpacked" → select the `extension` folder
+
+**4. Build your own installer**
+```bash
+cd app
+npm run build
+```
+Output appears in `app/release/`.
+
+---
+
 ## Known Limitations
 
 See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest list — including native-app enforcement scope, title-only classification, and the unsigned build warning.
@@ -122,7 +143,7 @@ See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest 
 
 ## Status
 
-🚧 **In active development.** Core loop (session → monitoring → AI classification → block/allow → summary) is working end-to-end across both the desktop app and browser extension, with a packaged Windows installer available.
+🚧 **In active development.** Core loop (session → monitoring → AI classification → block/allow → summary) is working end-to-end across both the desktop app and browser extension, with a live backend and a packaged Windows installer.
 
 ---
 
