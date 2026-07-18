@@ -2,7 +2,7 @@
 // Watches tab changes, checks against the current session goal via the
 // backend, and redirects blocked tabs to the block page with a reason.
 
-const BACKEND_URL = 'http://localhost:3001';
+const BACKEND_URL = 'https://backend-five-eta-84.vercel.app';
 
 // Avoid re-checking the exact same title repeatedly
 let lastCheckedTitle = null;

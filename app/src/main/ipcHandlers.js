@@ -1,6 +1,6 @@
 const { startWatching, stopWatching } = require('./windowWatcher');
 
-const BACKEND_URL = 'http://localhost:3001';
+const BACKEND_URL = 'https://backend-five-eta-84.vercel.app';
 
 let currentSession = null; // { goal, mode, sessionId }
 
