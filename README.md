@@ -28,9 +28,26 @@ None of these tools understand *why* an app is open. FocusGuard's bet: a small, 
 
 ---
 
+## Download
+
+A packaged Windows installer is available on the [Releases page](../../releases).
+
+> **Note:** Windows SmartScreen may show an "unknown publisher" warning on first launch — this is expected for a free, unsigned build (see [Known Limitations](docs/known-limitations.md)). Click **"More info" → "Run anyway"** to proceed.
+
+### Running the full experience
+
+The installed app handles session tracking and native window monitoring out of the box. To get the complete experience shown in the demo (AI classification + real browser tab blocking), you'll also need:
+
+1. **The backend running locally** — see [Setup for Developers](#setup-for-developers) below
+2. **The Chrome extension loaded** — see below
+
+This local-backend requirement is a deliberate MVP tradeoff to keep the project fully free to run (see [Known Limitations](docs/known-limitations.md)).
+
+---
+
 ## What Gets Actually Blocked vs. Just Logged
 
-This is the most important thing to understand about the current build — enforcement differs by *where* the activity happens, not by *what* the app is:
+Enforcement differs by *where* the activity happens:
 
 | Activity | Detected? | Actually Blocked? |
 |---|---|---|
@@ -39,7 +56,34 @@ This is the most important thing to understand about the current build — enfor
 
 **In short: real enforcement only exists inside Chrome, on actual tabs. Everything outside the browser is currently observe-and-log only.**
 
-This is a deliberate MVP scope decision, not a bug — see [Known Limitations](docs/known-limitations.md) for why.
+---
+
+## Setup for Developers
+
+```bash
+git clone https://github.com/vedantpanhale1055-MH/focusguard.git
+cd focusguard
+```
+
+**1. Backend**
+```bash
+cd backend
+npm install
+# add your Groq API key to a .env file (see .env.example)
+node server.js
+```
+
+**2. Desktop app**
+```bash
+cd app
+npm install
+npm start
+```
+
+**3. Browser extension**
+- Go to `chrome://extensions`
+- Enable Developer mode
+- Click "Load unpacked" → select the `extension` folder
 
 ---
 
@@ -53,6 +97,7 @@ This is a deliberate MVP scope decision, not a bug — see [Known Limitations](d
 | AI classification | Groq (Llama 3.1 8B Instant) |
 | Backend | Node.js + Express |
 | Database | Supabase (Postgres) — optional, for decision history |
+| Packaging | electron-builder (NSIS installer) |
 | Distribution | GitHub Releases (free, no code signing) |
 
 ---
@@ -64,24 +109,20 @@ focusguard/
 ├── app/          # Electron desktop app (UI, session timer, native window monitoring)
 ├── extension/    # Chrome extension (tab-level monitoring + real blocking)
 ├── backend/      # Express API — classification via Groq, shared session state
-└── docs/         # Design notes, known limitations, privacy policy
+└── docs/         # Design notes, known limitations, demo notes
 ```
 
 ---
 
 ## Known Limitations
 
-- **Native apps are logged, not force-closed** — enforcement on installed desktop apps (games, chat apps, etc.) would require deeper OS-level control (Tier 2/3 enforcement), which is out of scope for this build and documented as a conscious tradeoff, not a gap
-- **Browser-only real enforcement** — actual blocking (redirect) only works for Chrome tabs via the extension; the desktop app's own window monitoring is detection-only
-- **Hover-previews in YouTube** (and similar no-navigation previews) aren't caught, since no tab title/URL actually changes when you hover
-- **Title-only classification** — the AI judges based on window/tab titles, not full page content, so a vague or misleading title can occasionally be misclassified in either direction
-- **Unsigned desktop build** — Windows SmartScreen may warn "unknown publisher" on first install, since this is a free, unsigned distribution via GitHub Releases
+See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest list — including native-app enforcement scope, title-only classification, and the unsigned build warning.
 
 ---
 
 ## Status
 
-🚧 **In active development.** Core loop (session → monitoring → AI classification → block/allow → summary) is working end-to-end across both the desktop app and browser extension.
+🚧 **In active development.** Core loop (session → monitoring → AI classification → block/allow → summary) is working end-to-end across both the desktop app and browser extension, with a packaged Windows installer available.
 
 ---
 

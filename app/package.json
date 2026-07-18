@@ -5,16 +5,18 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Vedant Panhale",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "active-win": "^8.2.1"
   },
   "devDependencies": {
-    "electron": "^31.7.7"
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
   }
 }
