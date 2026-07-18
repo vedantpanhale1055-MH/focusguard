@@ -16,6 +16,13 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`FocusGuard backend listening on port ${PORT}`);
-});
+
+// Only listen locally when run directly (node server.js).
+// Vercel's serverless runtime imports `app` instead of calling listen().
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`FocusGuard backend listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;
