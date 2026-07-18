@@ -4,3 +4,7 @@ const reason = params.get('reason') || 'Unrelated to your current focus goal.';
 
 document.getElementById('tab-title').textContent = title;
 document.getElementById('reason').textContent = reason;
+
+document.getElementById('go-back-btn').addEventListener('click', () => {
+  history.back();
+});
