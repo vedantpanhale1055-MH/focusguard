@@ -28,14 +28,14 @@ There are two parts to install: the **desktop app** and the **Chrome extension**
 2. Download **`FocusGuard.AI.Setup.1.0.0.exe`**
 3. Run the installer
    - Windows SmartScreen will likely show **"Windows protected your PC"** — this is expected for a free, unsigned build. Click **"More info"** → **"Run anyway"** to proceed.
-4. Choose **"Only for me"** during setup (simpler, no admin prompt needed), finish the install
+4. Choose **"Only for me"** during setup, finish the install
 5. Launch **FocusGuard AI** from the Start Menu or desktop shortcut
 
-That's it for the app — it connects automatically to the live backend, no extra setup, no need to run anything else locally for native app monitoring.
+The app connects automatically to a live backend — no extra setup needed for native app monitoring.
 
 ### Step 2 — Load the Chrome extension (for real tab blocking)
 
-This step is required to actually **block** distracting browser tabs. Without it, the app will still *detect and log* your browser activity, but won't redirect blocked tabs.
+Required to actually **block** distracting browser tabs. Without it, the app will still *detect and log* browser activity, but won't redirect blocked tabs.
 
 1. Download or clone this repository (just need the `extension` folder):
    ```
@@ -52,9 +52,10 @@ This step is required to actually **block** distracting browser tabs. Without it
 1. Open the FocusGuard AI app
 2. Enter your goal (e.g. "Learn Python") and pick a session duration
 3. Click **Start Session**
-4. Work as normal — FocusGuard watches your active windows and browser tabs
-5. Off-goal activity gets flagged (native apps) or actually blocked with a redirect (browser tabs)
-6. When the timer ends (or you end early), you'll see a session summary with your Focus Score
+4. **⏱️ Give it about 30 seconds after starting** before it starts catching already-open tabs — the extension re-checks your active tab on a periodic cycle (not instantly on session start), so if you're already sitting on an off-goal tab when you hit Start, it may take up to 30 seconds to catch it. Switching tabs or opening a new one triggers an instant check instead.
+5. Work as normal — FocusGuard watches your active windows and browser tabs
+6. Off-goal activity gets flagged (native apps) or actually blocked with a redirect (browser tabs)
+7. When the timer ends (or you end early), you'll see a session summary with your Focus Score
 
 ---
 
@@ -137,13 +138,36 @@ Output appears in `app/release/`.
 
 ## Known Limitations
 
-See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest list — including native-app enforcement scope, title-only classification, and the unsigned build warning.
+See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest list.
+
+---
+
+## Changelog / What's Been Done
+
+**v1.0 — Initial working release**
+- Core loop: session start → AI classification → allow/block → session summary with Focus Score
+- Electron desktop app with native window monitoring and session timer
+- Chrome extension for real-time tab-level blocking
+- AI classifier tuned to judge actual content, not just platform/app (e.g. a coding tutorial on YouTube is allowed, unrelated videos are blocked)
+- Backend deployed live on Vercel — no local server required to run the app
+- Packaged Windows installer via electron-builder, distributed through GitHub Releases
+
+**Post-launch fixes**
+- Fixed classifier prompt stereotyping platforms (e.g. blocking all YouTube regardless of content)
+- Fixed CSP violation on the block page (inline `onclick` not allowed under Manifest V3)
+- Fixed FocusGuard's own window being incorrectly self-flagged as a distraction
+- Fixed serverless deployment crash caused by `dotenv` and missing environment variable naming on Vercel
+- Fixed extension failing to catch tabs that were already open when a session started — Manifest V3 service workers suspend `setInterval`, so periodic re-checks now use `chrome.alarms` instead, which survives suspension
+- Fixed tab redirect silently failing due to ambiguous window targeting from the background service worker — now uses `lastFocusedWindow` and properly awaits/logs the redirect call
+- Added file-based error logging (`focusguard.log` in the app's userData folder) so issues in the packaged `.exe` can be diagnosed without a visible console
 
 ---
 
 ## Status
 
-🚧 **In active development.** Core loop (session → monitoring → AI classification → block/allow → summary) is working end-to-end across both the desktop app and browser extension, with a live backend and a packaged Windows installer.
+✅ **v1.0 shipped and verified working end-to-end** — session → monitoring → AI classification → block/allow → summary, confirmed in both dev mode and the packaged installer.
+
+🚧 Actively iterating — next up: a Reflective Exit Check (AI-generated question before ending a session early) and deeper native-app enforcement.
 
 ---
 
