@@ -1,9 +1,24 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { startWatching, stopWatching } = require('./windowWatcher');
 const { registerIpcHandlers } = require('./ipcHandlers');
 
 let mainWindow;
+
+// Unconditional startup log — writes immediately on every launch,
+// independent of any session logic. Used to confirm the packaged app
+// is actually running this build of the code.
+try {
+  const startupLogPath = path.join(app.getPath('userData'), 'startup.log');
+  fs.appendFileSync(
+    startupLogPath,
+    `[${new Date().toISOString()}] App started. userData path: ${app.getPath('userData')}\n`
+  );
+} catch (err) {
+  // If even this fails, there's nothing else we can do to surface it
+  // from inside the packaged app.
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({

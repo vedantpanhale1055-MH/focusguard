@@ -32,6 +32,19 @@ async function classifyTab(goal, tabTitle) {
   }
 }
 
+async function blockTab(tabId, title, reason) {
+  const blockedUrl =
+    chrome.runtime.getURL('block-page/blocked.html') +
+    `?reason=${encodeURIComponent(reason)}&title=${encodeURIComponent(title)}`;
+
+  try {
+    const updated = await chrome.tabs.update(tabId, { url: blockedUrl });
+    console.log('FocusGuard: redirect attempted', { tabId, updated });
+  } catch (err) {
+    console.error('FocusGuard: tabs.update failed', err.message, { tabId });
+  }
+}
+
 async function handleTab(tab, force = false) {
   if (!tab || !tab.id || !tab.title || !tab.url) return;
   if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) return;
@@ -44,14 +57,10 @@ async function handleTab(tab, force = false) {
   lastCheckedTitle = tab.title;
 
   const result = await classifyTab(session.goal, tab.title);
-  console.log('FocusGuard check:', tab.title, '->', result);
+  console.log('FocusGuard check:', tab.title, '-> tabId:', tab.id, result);
 
   if (!result.allow) {
-    const blockedUrl =
-      chrome.runtime.getURL('block-page/blocked.html') +
-      `?reason=${encodeURIComponent(result.reason)}&title=${encodeURIComponent(tab.title)}`;
-
-    chrome.tabs.update(tab.id, { url: blockedUrl });
+    await blockTab(tab.id, tab.title, result.reason);
   }
 }
 
@@ -75,9 +84,18 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== 'focusguard-recheck') return;
 
   try {
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // Use lastFocusedWindow instead of currentWindow — from a background
+    // service worker, "currentWindow" is ambiguous and can pick the wrong
+    // window if multiple Chrome windows (or a DevTools window) are open.
+    const [activeTab] = await chrome.tabs.query({
+      active: true,
+      lastFocusedWindow: true,
+    });
+
     if (activeTab) {
       await handleTab(activeTab, true);
+    } else {
+      console.log('FocusGuard: no active tab found on recheck');
     }
   } catch (err) {
     console.error('FocusGuard: alarm recheck failed', err);
