@@ -4,7 +4,6 @@
 
 const BACKEND_URL = 'https://backend-five-eta-84.vercel.app';
 
-// Avoid re-checking the exact same title repeatedly
 let lastCheckedTitle = null;
 let lastCheckedTabId = null;
 
@@ -12,7 +11,7 @@ async function getCurrentSession() {
   try {
     const res = await fetch(`${BACKEND_URL}/session/current`);
     const data = await res.json();
-    return data.session; // null if no active session
+    return data.session;
   } catch (err) {
     console.error('FocusGuard: could not reach backend for session', err);
     return null;
@@ -26,7 +25,7 @@ async function classifyTab(goal, tabTitle) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ goal, windowTitle: tabTitle }),
     });
-    return await res.json(); // { allow, reason }
+    return await res.json();
   } catch (err) {
     console.error('FocusGuard: classify request failed', err);
     return { allow: true, reason: 'Classification unreachable — allowed by default' };
@@ -38,14 +37,14 @@ async function handleTab(tab, force = false) {
   if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) return;
 
   const session = await getCurrentSession();
-  if (!session) return; // no active FocusGuard session, do nothing
+  if (!session) return;
 
-  // Skip if we already just checked this exact tab+title, unless forced
   if (!force && tab.id === lastCheckedTabId && tab.title === lastCheckedTitle) return;
   lastCheckedTabId = tab.id;
   lastCheckedTitle = tab.title;
 
   const result = await classifyTab(session.goal, tab.title);
+  console.log('FocusGuard check:', tab.title, '->', result);
 
   if (!result.allow) {
     const blockedUrl =
@@ -56,31 +55,31 @@ async function handleTab(tab, force = false) {
   }
 }
 
-// Fires when the active tab's content finishes loading or its title changes
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' || changeInfo.title) {
     handleTab(tab);
   }
 });
 
-// Fires when the user switches to a different tab
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   const tab = await chrome.tabs.get(tabId);
   handleTab(tab);
 });
 
-// Periodic re-check of the currently active tab — catches the case where
-// a session starts while the user is already sitting on a tab with no
-// title change and no tab switch (e.g. watching a long video).
-setInterval(async () => {
+// MV3 service workers get suspended when idle, which silently kills
+// setInterval. chrome.alarms survives suspension and wakes the worker
+// back up, so we use it for periodic re-checks instead.
+chrome.alarms.create('focusguard-recheck', { periodInMinutes: 0.5 });
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name !== 'focusguard-recheck') return;
+
   try {
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (activeTab) {
-      // Force-check periodically even if title hasn't changed, since the
-      // session itself may have just started.
       await handleTab(activeTab, true);
     }
   } catch (err) {
-    console.error('FocusGuard: periodic check failed', err);
+    console.error('FocusGuard: alarm recheck failed', err);
   }
-}, 5000);
+});

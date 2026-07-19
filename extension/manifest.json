@@ -3,7 +3,7 @@
   "name": "FocusGuard AI",
   "version": "1.0.0",
   "description": "Blocks distracting tabs based on your stated focus goal, not a fixed list.",
-  "permissions": ["tabs", "storage"],
+  "permissions": ["tabs", "storage", "alarms"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
