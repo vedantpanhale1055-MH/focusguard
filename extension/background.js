@@ -33,15 +33,15 @@ async function classifyTab(goal, tabTitle) {
   }
 }
 
-async function handleTab(tab) {
+async function handleTab(tab, force = false) {
   if (!tab || !tab.id || !tab.title || !tab.url) return;
   if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) return;
 
   const session = await getCurrentSession();
   if (!session) return; // no active FocusGuard session, do nothing
 
-  // Skip if we already just checked this exact tab+title
-  if (tab.id === lastCheckedTabId && tab.title === lastCheckedTitle) return;
+  // Skip if we already just checked this exact tab+title, unless forced
+  if (!force && tab.id === lastCheckedTabId && tab.title === lastCheckedTitle) return;
   lastCheckedTabId = tab.id;
   lastCheckedTitle = tab.title;
 
@@ -68,3 +68,19 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   const tab = await chrome.tabs.get(tabId);
   handleTab(tab);
 });
+
+// Periodic re-check of the currently active tab — catches the case where
+// a session starts while the user is already sitting on a tab with no
+// title change and no tab switch (e.g. watching a long video).
+setInterval(async () => {
+  try {
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (activeTab) {
+      // Force-check periodically even if title hasn't changed, since the
+      // session itself may have just started.
+      await handleTab(activeTab, true);
+    }
+  } catch (err) {
+    console.error('FocusGuard: periodic check failed', err);
+  }
+}, 5000);
