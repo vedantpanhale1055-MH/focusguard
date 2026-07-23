@@ -6,10 +6,42 @@
 }
 
 body {
-  background: #0f1115;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(79, 209, 197, 0.10), transparent 35%),
+    radial-gradient(circle at 85% 10%, rgba(79, 209, 197, 0.06), transparent 40%),
+    radial-gradient(circle at 75% 90%, rgba(240, 160, 90, 0.05), transparent 40%),
+    linear-gradient(180deg, #0a0e14 0%, #05070a 100%);
+  background-attachment: fixed;
   color: #e6e6e6;
   height: 100vh;
   overflow: hidden;
+  position: relative;
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  width: 420px;
+  height: 420px;
+  top: -100px;
+  left: -120px;
+  background: radial-gradient(circle, rgba(79, 209, 197, 0.12), transparent 70%);
+}
+
+body::after {
+  width: 380px;
+  height: 380px;
+  bottom: -140px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(79, 209, 197, 0.08), transparent 70%);
 }
 
 #app {
@@ -19,6 +51,8 @@ body {
   justify-content: center;
   height: 100vh;
   padding: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .card {
@@ -203,4 +237,19 @@ button.secondary {
   margin-top: 12px;
   font-size: 13px;
   min-height: 18px;
+}
+/* Cursor-following glow */
+.cursor-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 209, 197, 0.15), transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+  transform: translate(-9999px, -9999px);
+  will-change: transform;
 }
