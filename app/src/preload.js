@@ -6,4 +6,6 @@ contextBridge.exposeInMainWorld('focusguard', {
   onClassification: (callback) => {
     ipcRenderer.on('classification:result', (event, data) => callback(data));
   },
+  exitCheckQuestion: (payload) => ipcRenderer.invoke('session:exitCheckQuestion', payload),
+  exitCheckGrade: (payload) => ipcRenderer.invoke('session:exitCheckGrade', payload),
 });

@@ -1,51 +1,29 @@
-const { app } = require('electron');
-const fs = require('fs');
-const path = require('path');
 const { startWatching, stopWatching } = require('./windowWatcher');
-
 const BACKEND_URL = 'https://backend-five-eta-84.vercel.app';
 
 let currentSession = null; // { goal, mode, sessionId }
-
-// Write errors to a log file, since packaged apps have no visible console.
-const logPath = path.join(app.getPath('userData'), 'focusguard.log');
-
-function logError(label, err) {
-  const line = `[${new Date().toISOString()}] ${label}: ${err.message || err}\n`;
-  console.error(label, err);
-  try {
-    fs.appendFileSync(logPath, line);
-  } catch (writeErr) {
-    console.error('Failed to write log file:', writeErr.message);
-  }
-}
 
 function registerIpcHandlers(ipcMain, getMainWindow) {
   // Renderer asks to start a session
   ipcMain.handle('session:start', async (event, { goal, mode }) => {
     currentSession = { goal, mode, sessionId: null };
-    let backendOk = false;
 
     // Tell the backend so the browser extension can see the active goal too
     try {
-      const res = await fetch(`${BACKEND_URL}/session/start`, {
+      await fetch(`${BACKEND_URL}/session/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal, mode }),
       });
-      backendOk = res.ok;
-      if (!res.ok) {
-        logError('Backend session start returned non-OK status', new Error(`Status ${res.status}`));
-      }
     } catch (err) {
-      logError('Failed to notify backend of session start', err);
+      console.error('Failed to notify backend of session start:', err.message);
     }
 
     startWatching(async ({ appName, title }) => {
       await evaluateWindow(appName, title, getMainWindow);
     });
 
-    return { started: true, backendOk, logPath };
+    return { started: true };
   });
 
   // Renderer asks to end a session
@@ -57,10 +35,40 @@ function registerIpcHandlers(ipcMain, getMainWindow) {
     try {
       await fetch(`${BACKEND_URL}/session/end`, { method: 'POST' });
     } catch (err) {
-      logError('Failed to notify backend of session end', err);
+      console.error('Failed to notify backend of session end:', err.message);
     }
 
     return { ended: true, session: endedSession };
+  });
+
+  // Reflective Exit Check — ask a question before ending early
+  ipcMain.handle('session:exitCheckQuestion', async (event, { goal, mode, activityLog }) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/exit-check/question`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, mode, activityLog }),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error('Exit check question failed:', err.message);
+      return { applicable: false };
+    }
+  });
+
+  // Reflective Exit Check — grade the user's answer
+  ipcMain.handle('session:exitCheckGrade', async (event, { question, answer, goal }) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/exit-check/grade`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, answer, goal }),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error('Exit check grade failed:', err.message);
+      return { passed: true, feedback: 'Could not verify — proceeding anyway.' };
+    }
   });
 }
 
@@ -81,7 +89,6 @@ async function evaluateWindow(appName, title, getMainWindow) {
     });
 
     const result = await res.json();
-
     const win = getMainWindow();
     if (win) {
       win.webContents.send('classification:result', {
@@ -92,7 +99,7 @@ async function evaluateWindow(appName, title, getMainWindow) {
       });
     }
   } catch (err) {
-    logError('Failed to reach backend for classify', err);
+    console.error('Failed to reach backend:', err.message);
   }
 }
 

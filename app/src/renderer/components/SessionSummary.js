@@ -23,6 +23,18 @@ function renderSessionSummary(container, goal, log, endedEarly, onRestart) {
     ? '<p class="subtitle" style="color:#f0a05a;">⚠ Session ended early</p>'
     : '<p class="subtitle" style="color:#4fd1c5;">✅ Session completed</p>';
 
+  const reflection = window.__lastReflection;
+  const reflectionHtml = reflection
+    ? `
+      <div class="summary-reflection">
+        <h4>Reflection Check</h4>
+        <p><strong>Q:</strong> ${reflection.question}</p>
+        <p><strong>A:</strong> ${reflection.answer}</p>
+        <p style="color:${reflection.passed ? '#4ade80' : '#fbbf24'}">${reflection.feedback}</p>
+      </div>
+    `
+    : '';
+
   container.innerHTML = `
     <div class="card">
       <h1>Session Summary</h1>
@@ -36,6 +48,8 @@ function renderSessionSummary(container, goal, log, endedEarly, onRestart) {
 
       <p class="subtitle">Focus Score: <strong style="color:#4fd1c5">${focusScore}%</strong></p>
 
+      ${reflectionHtml}
+
       <div class="log">
         ${logHtml || '<p class="subtitle">No activity recorded this session.</p>'}
       </div>
@@ -43,6 +57,9 @@ function renderSessionSummary(container, goal, log, endedEarly, onRestart) {
       <button id="restart-btn">Start New Session</button>
     </div>
   `;
+
+  // Clear it so it doesn't leak into the next session's summary
+  window.__lastReflection = null;
 
   container.querySelector('#restart-btn').addEventListener('click', onRestart);
 }

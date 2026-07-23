@@ -3,6 +3,7 @@
 const appEl = document.getElementById('app');
 
 let currentGoal = '';
+let currentMode = '';
 let activityLog = []; // { title, allow, reason }
 let timerInterval = null;
 let secondsRemaining = 0;
@@ -16,6 +17,7 @@ function goToStartScreen() {
 
 async function handleStart(goal, mode, durationMinutes) {
   currentGoal = goal;
+  currentMode = mode;
   activityLog = [];
   sessionEndedEarly = false;
   secondsRemaining = durationMinutes * 60;
@@ -40,8 +42,7 @@ function renderLiveScreen() {
   `;
 
   document.getElementById('end-btn').addEventListener('click', () => {
-    sessionEndedEarly = true;
-    handleEnd();
+    attemptEndEarly();
   });
 }
 
@@ -84,6 +85,40 @@ function appendToLiveLog(entry) {
     <div class="reason">${entry.allow ? '✅ Allowed' : '🚫 Blocked'} — ${entry.reason}</div>
   `;
   logEl.prepend(div);
+}
+
+// Called when the user clicks "End Session Early" — stops the timer,
+// asks the backend if a reflection question applies to this mode,
+// and either shows the question screen or ends immediately.
+async function attemptEndEarly() {
+  clearTimerInterval();
+
+  const check = await window.focusguard.exitCheckQuestion({
+    goal: currentGoal,
+    mode: currentMode,
+    activityLog,
+  });
+
+  if (!check.applicable) {
+    sessionEndedEarly = true;
+    handleEnd();
+    return;
+  }
+
+  renderReflectiveExit(
+    appEl,
+    { question: check.question, goal: currentGoal },
+    async (answer, result) => {
+      window.__lastReflection = {
+        question: check.question,
+        answer,
+        passed: result.passed,
+        feedback: result.feedback,
+      };
+      sessionEndedEarly = true;
+      await handleEnd();
+    }
+  );
 }
 
 async function handleEnd() {
