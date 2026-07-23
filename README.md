@@ -56,7 +56,7 @@ Required to actually **block** distracting browser tabs. Without it, the app wil
 5. Work as normal — FocusGuard watches your active windows and browser tabs
 6. Off-goal activity gets flagged (native apps) or actually blocked with a redirect (browser tabs)
 7. If you end a **Study / Reading / Coursework** session early, FocusGuard will ask you one quick AI-generated question about what you actually covered before letting you exit — a soft check, not a hard lock. Other modes and a natural (timer-completed) session end skip this.
-8. When the timer ends (or you end early), you'll see a session summary with your Focus Score, and the reflection Q&A if one was asked
+8. When the timer ends (or you end early), you'll see a session summary with your Focus Score, a short **AI-generated analysis** of the session, and the reflection Q&A if one was asked
 
 ---
 
@@ -80,9 +80,9 @@ Enforcement differs by *where* the activity happens:
 | Desktop app | Electron |
 | Browser extension | Chrome Manifest V3 |
 | Window monitoring | `active-win` |
-| AI classification & reflection | Groq (Llama 3.1 8B Instant) |
+| AI classification, reflection & session analysis | Groq (Llama 3.1 8B Instant) |
 | Backend | Node.js + Express, deployed on Vercel |
-| Database | Supabase (Postgres) — schema ready, logging integration in progress |
+| Database | Supabase (Postgres) — sessions and decisions fully persisted, with server-computed focus scores |
 | Packaging | electron-builder (NSIS installer) |
 | Distribution | GitHub Releases (free, no code signing) |
 
@@ -94,7 +94,7 @@ Enforcement differs by *where* the activity happens:
 focusguard/
 ├── app/          # Electron desktop app (UI, session timer, native window monitoring, reflection screen)
 ├── extension/    # Chrome extension (tab-level monitoring + real blocking)
-├── backend/      # Express API — classification, reflection question/grading via Groq, shared session state
+├── backend/      # Express API — classification, reflection question/grading, session analysis via Groq, Supabase persistence
 └── docs/         # Design notes, known limitations, demo notes
 ```
 
@@ -111,7 +111,7 @@ cd focusguard
 ```bash
 cd backend
 npm install
-# add your own Groq API key to a .env file — see .env.example
+# add your own Groq API key, plus SUPABASE_URL and SUPABASE_SERVICE_KEY, to a .env file — see .env.example
 node server.js
 ```
 If running your own backend locally, update `BACKEND_URL` in `app/src/main/ipcHandlers.js` and `extension/background.js` to `http://localhost:3001`.
@@ -170,19 +170,27 @@ See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest 
 - Two new backend routes (`/exit-check/question`, `/exit-check/grade`), reusing the existing Groq key and Vercel deployment — no new services or accounts needed
 - UI styled to match the app's existing card layout
 
+**v1.2 — Persistence, session analysis, and visual polish**
+- **Supabase persistence finished** — sessions and decisions now actually write to the database (previously schema-only, never verified end-to-end). Each session creates a real `sessions` row on start; ending a session computes a focus score server-side from every logged decision and writes it back
+- **Session-end AI analysis** — a short natural-language wrap-up now appears on the summary screen alongside the Focus Score, calling out real patterns (repeated distractions, strong streaks, drop-off near the end) rather than generic praise. New `/analysis` backend route, reuses the existing Groq key
+- Fixed: `analyzeSession` wasn't exposed in `preload.js`, which silently broke the end-of-session flow right after the Reflective Exit Check — session would get stuck on "Checking..." and never reach the summary
+- Fixed: the new `/analysis` route existed but was never registered in `server.js`, so it 404'd until mounted
+- Ambient background — soft multi-color aurora-style glow (teal, violet, amber) behind the main card, replacing the previous flat black background
+- Cursor-following glow effect with a subtle hue shift for a more dynamic feel
+- Reflection Check and Session Analysis now both rendered as styled cards on the summary screen, instead of plain text
+
 ---
 
 ## Status
 
-✅ **v1.1 shipped and verified working end-to-end** — session → monitoring → AI classification → block/allow → (optional reflection check) → summary, confirmed in both dev mode and the packaged installer.
+✅ **v1.2 shipped** — session → monitoring → AI classification → block/allow → (optional reflection check) → AI session analysis → summary, with full Supabase persistence, confirmed working end-to-end in dev mode.
 
 🚧 Actively iterating.
 
 ## What's Next
 
-- **Session-end AI analysis** — a short natural-language summary of the whole session (patterns, what went well, what to tighten up), not just a Focus Score number
+- **Session history / Productivity timeline** — now that Supabase persistence is finished, this is unblocked. Starting with a simple past-sessions list (goal, mode, focus score, date) on the start screen, then building out the full GitHub-style heatmap view of Focus Score across days
 - **Increased classifier context awareness** — feeding recent activity trend and elapsed/remaining session time into the classifier so it judges patterns, not just isolated moments; idle/away detection
-- **Productivity timeline** — a view of Focus Score and activity trends across sessions over time (depends on finishing the Supabase persistence layer, which is currently schema-only)
 - **Auto-updater** — currently every app/extension change requires manually downloading a new installer; a real updater would push these automatically
 - **Deeper native-app enforcement** — moving native desktop apps from detect-and-log to actual enforcement
 
