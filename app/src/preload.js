@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('focusguard', {
   },
   exitCheckQuestion: (payload) => ipcRenderer.invoke('session:exitCheckQuestion', payload),
   exitCheckGrade: (payload) => ipcRenderer.invoke('session:exitCheckGrade', payload),
+  analyzeSession: (payload) => ipcRenderer.invoke('session:analyze', payload),
 });

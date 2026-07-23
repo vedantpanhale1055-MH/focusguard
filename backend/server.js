@@ -14,6 +14,9 @@ app.use('/session', sessionRoute);
 const exitCheckRoutes = require("./routes/exitCheck");
 app.use("/exit-check", exitCheckRoutes);
 
+const analysisRoutes = require("./routes/analysis");
+app.use("/analysis", analysisRoutes);
+
 app.get('/', (req, res) => {
   res.send('FocusGuard backend is running.');
 });

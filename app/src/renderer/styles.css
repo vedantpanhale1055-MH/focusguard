@@ -23,7 +23,7 @@ body::after {
   content: '';
   position: fixed;
   border-radius: 50%;
-  filter: blur(80px);
+  filter: blur(90px);
   pointer-events: none;
   z-index: 0;
 }
@@ -33,7 +33,7 @@ body::before {
   height: 420px;
   top: -100px;
   left: -120px;
-  background: radial-gradient(circle, rgba(79, 209, 197, 0.12), transparent 70%);
+  background: radial-gradient(circle, rgba(79, 209, 197, 0.14), transparent 70%);
 }
 
 body::after {
@@ -41,7 +41,7 @@ body::after {
   height: 380px;
   bottom: -140px;
   right: -100px;
-  background: radial-gradient(circle, rgba(79, 209, 197, 0.08), transparent 70%);
+  background: radial-gradient(circle, rgba(139, 127, 209, 0.10), transparent 70%);
 }
 
 #app {
@@ -53,6 +53,20 @@ body::after {
   padding: 24px;
   position: relative;
   z-index: 1;
+}
+
+#app::before {
+  content: '';
+  position: fixed;
+  width: 340px;
+  height: 340px;
+  top: 40%;
+  right: 5%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240, 160, 90, 0.08), transparent 70%);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .card {
@@ -238,6 +252,50 @@ button.secondary {
   font-size: 13px;
   min-height: 18px;
 }
+
+/* Reflection Check (shown on the summary screen) */
+.summary-reflection {
+  background: rgba(139, 127, 209, 0.06);
+  border: 1px solid rgba(139, 127, 209, 0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 16px 0;
+}
+
+.summary-reflection h4 {
+  color: #8b7fd1;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.summary-reflection p {
+  color: #c9c9c9;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+/* Session Analysis (shown on the summary screen) */
+.summary-analysis {
+  background: rgba(79, 209, 197, 0.06);
+  border: 1px solid rgba(79, 209, 197, 0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 16px 0;
+}
+
+.summary-analysis h4 {
+  color: #4fd1c5;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.summary-analysis p {
+  color: #c9c9c9;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* Cursor-following glow */
 .cursor-glow {
   position: fixed;

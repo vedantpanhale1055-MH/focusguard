@@ -125,7 +125,22 @@ async function handleEnd() {
   clearTimerInterval();
   await window.focusguard.endSession();
   hideBlockOverlay();
-  renderSessionSummary(appEl, currentGoal, activityLog, sessionEndedEarly, goToStartScreen);
+
+  const total = activityLog.length;
+  const blocked = activityLog.filter((e) => !e.allow).length;
+  const allowed = total - blocked;
+  const focusScore = total === 0 ? 100 : Math.round((allowed / total) * 100);
+
+  // Fetch the AI wrap-up before rendering the summary so it's ready in time.
+  // Fails open (available: false) if the AI call errors — summary still renders.
+  const analysis = await window.focusguard.analyzeSession({
+    goal: currentGoal,
+    mode: currentMode,
+    activityLog,
+    focusScore,
+  });
+
+  renderSessionSummary(appEl, currentGoal, activityLog, sessionEndedEarly, goToStartScreen, analysis);
 }
 
 // Listen for classification results pushed from the main process

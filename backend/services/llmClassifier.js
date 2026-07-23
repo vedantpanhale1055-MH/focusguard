@@ -46,8 +46,6 @@ Respond ONLY with valid JSON, no markdown, no extra text:
   }
 }
 
-module.exports = { classify };
-
 async function generateExitQuestion(goal, mode, activityLog) {
   const recentTitles = (activityLog || [])
     .filter(a => a.allow)
@@ -98,4 +96,30 @@ Respond ONLY with JSON: {"passed": true|false, "feedback": "short encouraging on
   return JSON.parse(raw.replace(/```json|```/g, ""));
 }
 
-module.exports = { classify, generateExitQuestion, gradeExitAnswer };
+async function generateSessionAnalysis(goal, mode, activityLog, focusScore) {
+  const entries = (activityLog || [])
+    .map((a) => `${a.allow ? 'ALLOWED' : 'BLOCKED'}: ${a.title}${a.reason ? ` (${a.reason})` : ''}`)
+    .join('\n') || 'No activity was logged this session.';
+
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages: [
+      {
+        role: "system",
+        content: `You write a short, natural-language wrap-up of a focus session for the user who just finished it. Speak directly to them ("you"), 2-4 sentences, plain and encouraging but honest — call out real patterns (e.g. repeated distractions, strong streaks, drop-off near the end) rather than generic praise. No preamble, no headers, no bullet points.
+Respond ONLY with JSON: {"summary": "..."}`
+      },
+      {
+        role: "user",
+        content: `Goal: "${goal}"\nMode: "${mode}"\nFocus Score: ${focusScore}%\nActivity log:\n${entries}`
+      }
+    ],
+    temperature: 0.5,
+    max_tokens: 150,
+  });
+
+  const raw = completion.choices[0].message.content.trim();
+  return JSON.parse(raw.replace(/```json|```/g, ""));
+}
+
+module.exports = { classify, generateExitQuestion, gradeExitAnswer, generateSessionAnalysis };

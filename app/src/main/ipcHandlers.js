@@ -83,6 +83,21 @@ function registerIpcHandlers(ipcMain, getMainWindow) {
       return { passed: true, feedback: 'Could not verify — proceeding anyway.' };
     }
   });
+
+  // Session-end AI analysis
+  ipcMain.handle('session:analyze', async (event, { goal, mode, activityLog, focusScore }) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, mode, activityLog, focusScore }),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error('Session analysis failed:', err.message);
+      return { available: false };
+    }
+  });
 }
 
 async function evaluateWindow(appName, title, getMainWindow) {
