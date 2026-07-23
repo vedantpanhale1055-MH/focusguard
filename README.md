@@ -50,12 +50,13 @@ Required to actually **block** distracting browser tabs. Without it, the app wil
 ### Step 3 — Use it
 
 1. Open the FocusGuard AI app
-2. Enter your goal (e.g. "Learn Python") and pick a session duration
+2. Enter your goal (e.g. "Learn Python"), pick a mode, and pick a session duration
 3. Click **Start Session**
 4. **⏱️ Give it about 30 seconds after starting** before it starts catching already-open tabs — the extension re-checks your active tab on a periodic cycle (not instantly on session start), so if you're already sitting on an off-goal tab when you hit Start, it may take up to 30 seconds to catch it. Switching tabs or opening a new one triggers an instant check instead.
 5. Work as normal — FocusGuard watches your active windows and browser tabs
 6. Off-goal activity gets flagged (native apps) or actually blocked with a redirect (browser tabs)
-7. When the timer ends (or you end early), you'll see a session summary with your Focus Score
+7. If you end a **Study / Reading / Coursework** session early, FocusGuard will ask you one quick AI-generated question about what you actually covered before letting you exit — a soft check, not a hard lock. Other modes and a natural (timer-completed) session end skip this.
+8. When the timer ends (or you end early), you'll see a session summary with your Focus Score, and the reflection Q&A if one was asked
 
 ---
 
@@ -79,9 +80,9 @@ Enforcement differs by *where* the activity happens:
 | Desktop app | Electron |
 | Browser extension | Chrome Manifest V3 |
 | Window monitoring | `active-win` |
-| AI classification | Groq (Llama 3.1 8B Instant) |
+| AI classification & reflection | Groq (Llama 3.1 8B Instant) |
 | Backend | Node.js + Express, deployed on Vercel |
-| Database | Supabase (Postgres) — optional, for decision history |
+| Database | Supabase (Postgres) — schema ready, logging integration in progress |
 | Packaging | electron-builder (NSIS installer) |
 | Distribution | GitHub Releases (free, no code signing) |
 
@@ -91,9 +92,9 @@ Enforcement differs by *where* the activity happens:
 
 ```
 focusguard/
-├── app/          # Electron desktop app (UI, session timer, native window monitoring)
+├── app/          # Electron desktop app (UI, session timer, native window monitoring, reflection screen)
 ├── extension/    # Chrome extension (tab-level monitoring + real blocking)
-├── backend/      # Express API — classification via Groq, shared session state
+├── backend/      # Express API — classification, reflection question/grading via Groq, shared session state
 └── docs/         # Design notes, known limitations, demo notes
 ```
 
@@ -161,13 +162,29 @@ See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest 
 - Fixed tab redirect silently failing due to ambiguous window targeting from the background service worker — now uses `lastFocusedWindow` and properly awaits/logs the redirect call
 - Added file-based error logging (`focusguard.log` in the app's userData folder) so issues in the packaged `.exe` can be diagnosed without a visible console
 
+**v1.1 — Reflective Exit Check**
+- Ending a Study/Reading/Coursework session early now triggers one AI-generated question about what was actually covered, based on the session's activity log
+- Grading is intentionally lenient (soft friction, not a hard lock) — any specific, genuine-looking answer passes
+- Skipped entirely for modes without a clean quiz equivalent (Coding, Meeting) and for natural timer completion
+- Reflection Q&A now shown on the session summary screen
+- Two new backend routes (`/exit-check/question`, `/exit-check/grade`), reusing the existing Groq key and Vercel deployment — no new services or accounts needed
+- UI styled to match the app's existing card layout
+
 ---
 
 ## Status
 
-✅ **v1.0 shipped and verified working end-to-end** — session → monitoring → AI classification → block/allow → summary, confirmed in both dev mode and the packaged installer.
+✅ **v1.1 shipped and verified working end-to-end** — session → monitoring → AI classification → block/allow → (optional reflection check) → summary, confirmed in both dev mode and the packaged installer.
 
-🚧 Actively iterating — next up: a Reflective Exit Check (AI-generated question before ending a session early) and deeper native-app enforcement.
+🚧 Actively iterating.
+
+## What's Next
+
+- **Session-end AI analysis** — a short natural-language summary of the whole session (patterns, what went well, what to tighten up), not just a Focus Score number
+- **Increased classifier context awareness** — feeding recent activity trend and elapsed/remaining session time into the classifier so it judges patterns, not just isolated moments; idle/away detection
+- **Productivity timeline** — a view of Focus Score and activity trends across sessions over time (depends on finishing the Supabase persistence layer, which is currently schema-only)
+- **Auto-updater** — currently every app/extension change requires manually downloading a new installer; a real updater would push these automatically
+- **Deeper native-app enforcement** — moving native desktop apps from detect-and-log to actual enforcement
 
 ---
 

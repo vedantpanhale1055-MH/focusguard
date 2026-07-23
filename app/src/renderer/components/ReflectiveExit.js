@@ -1,5 +1,6 @@
 function renderReflectiveExit(container, { question, goal }, onSubmit, onSkip) {
   container.innerHTML = `
+<div class="card">
     <div class="reflective-exit">
       <h3>Quick check before you go</h3>
       <p class="reflective-question">${question}</p>
@@ -9,7 +10,9 @@ function renderReflectiveExit(container, { question, goal }, onSubmit, onSkip) {
       </div>
       <p id="reflective-feedback" class="reflective-feedback"></p>
     </div>
-  `;
+</div>
+`;
+
 
   document.getElementById('reflective-submit').addEventListener('click', async () => {
     const answer = document.getElementById('reflective-answer').value.trim();

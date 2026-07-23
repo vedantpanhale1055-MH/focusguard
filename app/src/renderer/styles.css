@@ -158,3 +158,49 @@ button.secondary {
   color: #8892a0;
   max-width: 400px;
 }
+
+/* Reflective Exit Check */
+.reflective-exit {
+  padding: 4px 0;
+}
+
+.reflective-exit h3 {
+  margin: 0 0 8px 0;
+  color: #e6e6e6;
+}
+
+.reflective-question {
+  color: #c9c9c9;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+#reflective-answer {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #e6e6e6;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+}
+
+#reflective-answer:focus {
+  outline: none;
+  border-color: #4fd1c5;
+}
+
+.reflective-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.reflective-feedback {
+  margin-top: 12px;
+  font-size: 13px;
+  min-height: 18px;
+}
