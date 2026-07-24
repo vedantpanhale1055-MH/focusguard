@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('focusguard', {
   exitCheckGrade: (payload) => ipcRenderer.invoke('session:exitCheckGrade', payload),
   analyzeSession: (payload) => ipcRenderer.invoke('session:analyze', payload),
   getSessionHistory: (limit) => ipcRenderer.invoke('session:history', { limit }),
+  fetchHeatmap: (days) => ipcRenderer.invoke('session:heatmap', { days }),
 });

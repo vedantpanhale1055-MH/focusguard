@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { startSession, endSession, getCurrentSession } = require('../services/sessionStore');
-const { getSessionHistory } = require('../services/supabaseClient');
+const { getSessionHistory, getDailyFocusHistory } = require('../services/supabaseClient');
 
 // POST /session/start  body: { goal, mode }
 router.post('/start', async (req, res) => {
@@ -43,6 +43,19 @@ router.get('/history', async (req, res) => {
   } catch (err) {
     console.error('session/history route error:', err.message);
     res.json({ sessions: [] }); // fail open — history is non-critical
+  }
+});
+
+// GET /session/heatmap?days=90
+// Returns daily-aggregated focus scores for the productivity timeline.
+router.get('/heatmap', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days, 10) || 90;
+    const history = await getDailyFocusHistory(days);
+    res.json({ history });
+  } catch (err) {
+    console.error('session/heatmap route error:', err.message);
+    res.json({ history: [] }); // fail open — timeline is non-critical
   }
 });
 

@@ -105,6 +105,18 @@ function registerIpcHandlers(ipcMain, getMainWindow) {
       return { sessions: [] };
     }
   });
+
+  // Productivity timeline — daily-aggregated focus history for the heatmap
+  ipcMain.handle('session:heatmap', async (event, { days } = {}) => {
+    try {
+      const query = days ? `?days=${days}` : '';
+      const res = await fetch(`${BACKEND_URL}/session/heatmap${query}`);
+      return await res.json();
+    } catch (err) {
+      console.error('Heatmap fetch failed:', err.message);
+      return { history: [] };
+    }
+  });
 }
 
 async function evaluateWindow(appName, title, getMainWindow) {

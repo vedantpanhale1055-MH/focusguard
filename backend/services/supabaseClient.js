@@ -111,4 +111,69 @@ async function getSessionHistory(limit = 20) {
   return data;
 }
 
-module.exports = { supabase, createSession, endSessionRecord, logDecision, getSessionHistory };
+/**
+ * Returns a daily-aggregated focus history for the heatmap timeline.
+ * Only counts sessions that actually ended with a numeric focus_score
+ * (in-progress / never-ended sessions are excluded, same as they are
+ * from the focus score everywhere else).
+ *
+ * Each day's score is weighted by session duration in minutes, so a
+ * 60-minute session pulls a day's average more than a 5-minute one.
+ *
+ * Returns: [{ date: 'YYYY-MM-DD', score: 0-100, sessionCount }]
+ * — one entry per day that actually has data (no entry = no sessions
+ * that day; the frontend renders that as an empty/grey cell).
+ */
+async function getDailyFocusHistory(days = 90) {
+  if (!supabase) return [];
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('started_at, ended_at, focus_score')
+    .not('ended_at', 'is', null)
+    .gte('started_at', cutoff.toISOString())
+    .order('started_at', { ascending: true });
+
+  if (error) {
+    console.error('Supabase getDailyFocusHistory error:', error.message);
+    return [];
+  }
+
+  const byDay = {};
+
+  for (const s of data) {
+    if (typeof s.focus_score !== 'number') continue;
+
+    const day = s.started_at.slice(0, 10); // 'YYYY-MM-DD'
+    const durationMinutes = Math.max(
+      1,
+      (new Date(s.ended_at) - new Date(s.started_at)) / 60000
+    );
+
+    if (!byDay[day]) {
+      byDay[day] = { weightedSum: 0, totalWeight: 0, sessionCount: 0 };
+    }
+
+    byDay[day].weightedSum += s.focus_score * durationMinutes;
+    byDay[day].totalWeight += durationMinutes;
+    byDay[day].sessionCount += 1;
+  }
+
+  return Object.entries(byDay).map(([date, agg]) => ({
+    date,
+    score: Math.round(agg.weightedSum / agg.totalWeight),
+    sessionCount: agg.sessionCount,
+  }));
+}
+
+module.exports = {
+  supabase,
+  createSession,
+  endSessionRecord,
+  logDecision,
+  getSessionHistory,
+  getDailyFocusHistory,
+};
