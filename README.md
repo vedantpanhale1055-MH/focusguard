@@ -58,6 +58,7 @@ Required to actually **block** distracting browser tabs. Without it, the app wil
 7. If you end a **Study / Reading / Coursework** session early, FocusGuard will ask you one quick AI-generated question about what you actually covered before letting you exit — a soft check, not a hard lock. Other modes and a natural (timer-completed) session end skip this.
 8. When the timer ends (or you end early), you'll see a session summary with your Focus Score, a short **AI-generated analysis** of the session, and the reflection Q&A if one was asked
 9. From the start screen, click **"View Past Sessions"** to see a list of your previous sessions — goal, mode, date, and Focus Score — saved permanently, so it's all still there the next time you open the app, even after a restart
+10. From the start screen, click **"Productivity Timeline"** to see a GitHub-style heatmap of your daily Focus Score over the last 90 days — darker/brighter cells mean a stronger focus score that day, grey means no sessions that day. Hover any cell for the exact score and session count
 
 ---
 
@@ -83,7 +84,7 @@ Enforcement differs by *where* the activity happens:
 | Window monitoring | `active-win` |
 | AI classification, reflection & session analysis | Groq (Llama 3.1 8B Instant) |
 | Backend | Node.js + Express, deployed on Vercel |
-| Database | Supabase (Postgres) — sessions and decisions fully persisted, with server-computed focus scores and full session history |
+| Database | Supabase (Postgres) — sessions and decisions fully persisted, with server-computed focus scores, full session history, and daily-aggregated data for the productivity timeline |
 | Packaging | electron-builder (NSIS installer) |
 | Distribution | GitHub Releases (free, no code signing) |
 
@@ -93,9 +94,9 @@ Enforcement differs by *where* the activity happens:
 
 ```
 focusguard/
-├── app/          # Electron desktop app (UI, session timer, native window monitoring, reflection screen, past-sessions screen)
+├── app/          # Electron desktop app (UI, session timer, native window monitoring, reflection screen, past-sessions screen, productivity timeline)
 ├── extension/    # Chrome extension (tab-level monitoring + real blocking)
-├── backend/      # Express API — classification, reflection question/grading, session analysis, session history via Groq + Supabase
+├── backend/      # Express API — classification, reflection question/grading, session analysis, session history & heatmap via Groq + Supabase
 └── docs/         # Design notes, known limitations, demo notes
 ```
 
@@ -188,17 +189,25 @@ See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest 
 - Fixed: summary card content (Session Analysis + Reflection Check + full activity log stacked together) could overflow off-screen with no way to reach the "Start New Session" button — card now scrolls internally instead
 - **Root-caused and fixed the real reason Supabase writes were silently failing in production**: `SUPABASE_URL` had a trailing slash, which caused every Supabase request to fail with `PGRST125 — Invalid path specified in request URL`. The app kept running normally throughout (all failures were fail-open by design), which is exactly why this was hard to spot — no crash, no visible error, just silently empty tables. Confirmed via full Vercel log export, not just the truncated CLI log view
 
+**v1.4 — Productivity Timeline (GitHub-style heatmap)**
+- **Productivity Timeline screen** — new screen accessible from the start screen, showing a GitHub-contributions-style grid of daily Focus Score over the last 90 days, with month labels across the top and Mon/Wed/Fri labels down the side
+- Each day's score is duration-weighted across that day's sessions (a 60-minute session moves the day's average more than a 5-minute one), so the heatmap reflects real focus time, not just session count
+- Days with no sessions render as empty/grey cells rather than being skipped, so gaps in the timeline are visible at a glance
+- Hovering any cell shows the exact date, Focus Score %, and number of sessions that day
+- New backend function `getDailyFocusHistory` in `supabaseClient.js` and new route `GET /session/heatmap`
+- New IPC channel (`session:heatmap`) and `preload.js` binding (`fetchHeatmap`) connecting the renderer to the backend
+- Color bands (grey → light teal → full teal `#4fd1c5`) match the app's existing accent color rather than GitHub's green
+
 ---
 
 ## Status
 
-✅ **v1.3 shipped and fully verified** — session → monitoring → AI classification → block/allow → (optional reflection check) → AI session analysis → summary, with full Supabase persistence confirmed end-to-end (real rows appearing in `sessions` and `decisions`, Past Sessions screen correctly reading them back).
+✅ **v1.4 shipped** — session → monitoring → AI classification → block/allow → (optional reflection check) → AI session analysis → summary, with full Supabase persistence, Past Sessions, and the Productivity Timeline heatmap all confirmed working end-to-end.
 
 🚧 Actively iterating.
 
 ## What's Next
 
-- **Productivity timeline** — a GitHub-style heatmap showing Focus Score across days, using the same session history data now confirmed working. Biggest remaining visual feature, no longer blocked
 - **Increased classifier context awareness** — feeding recent activity trend and elapsed/remaining session time into the classifier so it judges patterns, not just isolated moments; idle/away detection
 - **Auto-updater** — currently every app/extension change requires manually downloading a new installer; a real updater would push these automatically
 - **Deeper native-app enforcement** — moving native desktop apps from detect-and-log to actual enforcement
