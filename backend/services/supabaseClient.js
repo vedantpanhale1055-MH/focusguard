@@ -27,7 +27,7 @@ async function createSession({ goal, mode }) {
     .single();
 
   if (error) {
-    console.error('Supabase createSession error:', error.message);
+    console.error('Supabase createSession error:', JSON.stringify(error));
     return null;
   }
 
