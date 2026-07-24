@@ -12,7 +12,12 @@ let sessionEndedEarly = false;
 function goToStartScreen() {
   activityLog = [];
   clearTimerInterval();
-  renderSessionStart(appEl, handleStart);
+  renderSessionStart(appEl, handleStart, goToHistoryScreen);
+}
+
+function goToHistoryScreen() {
+  clearTimerInterval();
+  renderSessionHistory(appEl, goToStartScreen);
 }
 
 async function handleStart(goal, mode, durationMinutes) {

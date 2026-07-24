@@ -90,4 +90,25 @@ async function logDecision({ sessionId, tabTitle, allowed, reason }) {
   }
 }
 
-module.exports = { supabase, createSession, endSessionRecord, logDecision };
+/**
+ * Returns the most recent sessions (default 20), newest first.
+ * Used for the past-sessions list and, later, the productivity timeline.
+ */
+async function getSessionHistory(limit = 20) {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('id, goal, mode, started_at, ended_at, focus_score')
+    .order('started_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Supabase getSessionHistory error:', error.message);
+    return [];
+  }
+
+  return data;
+}
+
+module.exports = { supabase, createSession, endSessionRecord, logDecision, getSessionHistory };

@@ -76,6 +76,8 @@ body::after {
   padding: 32px;
   width: 100%;
   max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 h1 {

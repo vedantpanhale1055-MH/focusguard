@@ -1,6 +1,7 @@
 // Renders the "start session" screen into #app.
 // Calls onStart(goal, mode, durationMinutes) when the user clicks Start.
-function renderSessionStart(container, onStart) {
+// Calls onViewHistory() when the user clicks "View Past Sessions".
+function renderSessionStart(container, onStart, onViewHistory) {
   container.innerHTML = `
     <div class="card">
       <h1>FocusGuard AI</h1>
@@ -31,6 +32,7 @@ function renderSessionStart(container, onStart) {
         style="display:none; margin-top:12px;" />
 
       <button id="start-btn">Start Session</button>
+      <button class="secondary" id="history-btn">View Past Sessions</button>
     </div>
   `;
 
@@ -63,5 +65,9 @@ function renderSessionStart(container, onStart) {
     }
 
     onStart(goal, mode, durationMinutes);
+  });
+
+  container.querySelector('#history-btn').addEventListener('click', () => {
+    if (onViewHistory) onViewHistory();
   });
 }

@@ -8,8 +8,6 @@ function registerIpcHandlers(ipcMain, getMainWindow) {
   ipcMain.handle('session:start', async (event, { goal, mode }) => {
     currentSession = { goal, mode, sessionId: null };
 
-    // Tell the backend so the browser extension can see the active goal too,
-    // and capture the real sessionId it creates in Supabase.
     try {
       const res = await fetch(`${BACKEND_URL}/session/start`, {
         method: 'POST',
@@ -48,9 +46,6 @@ function registerIpcHandlers(ipcMain, getMainWindow) {
       console.error('Failed to notify backend of session end:', err.message);
     }
 
-    // focusScore here is the server-computed one (from Supabase decisions);
-    // the renderer still computes its own from activityLog for the summary
-    // screen, this is just available if you want to cross-check or use it later.
     return { ended: true, session: endedSession, focusScore };
   });
 
@@ -96,6 +91,18 @@ function registerIpcHandlers(ipcMain, getMainWindow) {
     } catch (err) {
       console.error('Session analysis failed:', err.message);
       return { available: false };
+    }
+  });
+
+  // Past sessions list
+  ipcMain.handle('session:history', async (event, { limit } = {}) => {
+    try {
+      const query = limit ? `?limit=${limit}` : '';
+      const res = await fetch(`${BACKEND_URL}/session/history${query}`);
+      return await res.json();
+    } catch (err) {
+      console.error('Session history fetch failed:', err.message);
+      return { sessions: [] };
     }
   });
 }
