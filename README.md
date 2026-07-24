@@ -57,6 +57,7 @@ Required to actually **block** distracting browser tabs. Without it, the app wil
 6. Off-goal activity gets flagged (native apps) or actually blocked with a redirect (browser tabs)
 7. If you end a **Study / Reading / Coursework** session early, FocusGuard will ask you one quick AI-generated question about what you actually covered before letting you exit — a soft check, not a hard lock. Other modes and a natural (timer-completed) session end skip this.
 8. When the timer ends (or you end early), you'll see a session summary with your Focus Score, a short **AI-generated analysis** of the session, and the reflection Q&A if one was asked
+9. From the start screen, click **"View Past Sessions"** to see a list of your previous sessions — goal, mode, date, and Focus Score — saved permanently, so it's all still there the next time you open the app, even after a restart
 
 ---
 
@@ -82,7 +83,7 @@ Enforcement differs by *where* the activity happens:
 | Window monitoring | `active-win` |
 | AI classification, reflection & session analysis | Groq (Llama 3.1 8B Instant) |
 | Backend | Node.js + Express, deployed on Vercel |
-| Database | Supabase (Postgres) — sessions and decisions fully persisted, with server-computed focus scores |
+| Database | Supabase (Postgres) — sessions and decisions fully persisted, with server-computed focus scores and full session history |
 | Packaging | electron-builder (NSIS installer) |
 | Distribution | GitHub Releases (free, no code signing) |
 
@@ -92,9 +93,9 @@ Enforcement differs by *where* the activity happens:
 
 ```
 focusguard/
-├── app/          # Electron desktop app (UI, session timer, native window monitoring, reflection screen)
+├── app/          # Electron desktop app (UI, session timer, native window monitoring, reflection screen, past-sessions screen)
 ├── extension/    # Chrome extension (tab-level monitoring + real blocking)
-├── backend/      # Express API — classification, reflection question/grading, session analysis via Groq, Supabase persistence
+├── backend/      # Express API — classification, reflection question/grading, session analysis, session history via Groq + Supabase
 └── docs/         # Design notes, known limitations, demo notes
 ```
 
@@ -115,6 +116,8 @@ npm install
 node server.js
 ```
 If running your own backend locally, update `BACKEND_URL` in `app/src/main/ipcHandlers.js` and `extension/background.js` to `http://localhost:3001`.
+
+⚠️ **If deploying your own backend to Vercel:** double-check `SUPABASE_URL` has **no trailing slash** when you add it as an environment variable. A trailing slash causes a `PGRST125 — Invalid path specified in request URL` error from every Supabase call, which fails silently (the app still runs, it just never persists anything). This cost a lot of debugging time — worth getting right the first time.
 
 **2. Desktop app**
 ```bash
@@ -179,17 +182,23 @@ See [docs/known-limitations.md](docs/known-limitations.md) for the full, honest 
 - Cursor-following glow effect with a subtle hue shift for a more dynamic feel
 - Reflection Check and Session Analysis now both rendered as styled cards on the summary screen, instead of plain text
 
+**v1.3 — Session history, and Supabase actually verified working**
+- **Past Sessions screen** — new screen accessible from the start screen, showing the last 20 sessions with goal, mode, date, and a color-coded Focus Score. New `GET /session/history` backend route
+- Sessions persist permanently across app restarts — closing and reopening the app, or even reinstalling it later, doesn't lose history, since it's stored in Supabase rather than app memory
+- Fixed: summary card content (Session Analysis + Reflection Check + full activity log stacked together) could overflow off-screen with no way to reach the "Start New Session" button — card now scrolls internally instead
+- **Root-caused and fixed the real reason Supabase writes were silently failing in production**: `SUPABASE_URL` had a trailing slash, which caused every Supabase request to fail with `PGRST125 — Invalid path specified in request URL`. The app kept running normally throughout (all failures were fail-open by design), which is exactly why this was hard to spot — no crash, no visible error, just silently empty tables. Confirmed via full Vercel log export, not just the truncated CLI log view
+
 ---
 
 ## Status
 
-✅ **v1.2 shipped** — session → monitoring → AI classification → block/allow → (optional reflection check) → AI session analysis → summary, with full Supabase persistence, confirmed working end-to-end in dev mode.
+✅ **v1.3 shipped and fully verified** — session → monitoring → AI classification → block/allow → (optional reflection check) → AI session analysis → summary, with full Supabase persistence confirmed end-to-end (real rows appearing in `sessions` and `decisions`, Past Sessions screen correctly reading them back).
 
 🚧 Actively iterating.
 
 ## What's Next
 
-- **Session history / Productivity timeline** — now that Supabase persistence is finished, this is unblocked. Starting with a simple past-sessions list (goal, mode, focus score, date) on the start screen, then building out the full GitHub-style heatmap view of Focus Score across days
+- **Productivity timeline** — a GitHub-style heatmap showing Focus Score across days, using the same session history data now confirmed working. Biggest remaining visual feature, no longer blocked
 - **Increased classifier context awareness** — feeding recent activity trend and elapsed/remaining session time into the classifier so it judges patterns, not just isolated moments; idle/away detection
 - **Auto-updater** — currently every app/extension change requires manually downloading a new installer; a real updater would push these automatically
 - **Deeper native-app enforcement** — moving native desktop apps from detect-and-log to actual enforcement
